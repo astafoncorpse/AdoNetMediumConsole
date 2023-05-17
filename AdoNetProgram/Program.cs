@@ -46,8 +46,10 @@ class Program
                     foreach (var cell in cells)
                     {
                         Console.Write($"{cell}\t");
+                        Console.Write($"{row[data.Columns[0].ColumnName]}\t");
                     }
                     Console.WriteLine();
+                   
                 }
                
             }
