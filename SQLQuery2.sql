@@ -1,4 +1,1 @@
-select 
-  * 
-from 
-  NetworkUser
+select * from NetworkUser

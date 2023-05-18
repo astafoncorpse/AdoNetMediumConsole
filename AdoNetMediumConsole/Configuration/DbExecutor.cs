@@ -27,5 +27,23 @@ namespace AdoNetMediumLib.Configuration
             adapter.Fill(ds);
             return ds.Tables[0];
         }
+        public SqlDataReader SelectAllCommandReader(string table)
+        {
+            var command = new SqlCommand
+            {
+                CommandType = CommandType.Text,
+                CommandText = "select * from " + table,
+                Connection = connector.GetConnection(),
+            };
+
+            SqlDataReader reader = command.ExecuteReader();
+
+            if (reader.HasRows)
+            {
+                return reader;
+            }
+
+            return null;
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using AdoNetMediumLib.Configuration;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Reflection.PortableExecutable;
 
 class Program
 {
@@ -10,8 +11,8 @@ class Program
 
         var result = connector.ConnectAsync();
 
-        var data = new DataTable(); 
-        
+        var data = new DataTable();
+
 
         if (result.Result)
         {
@@ -27,7 +28,7 @@ class Program
 
             Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
 
-         
+
             Console.WriteLine("Отключаем БД!");
             connector.DisconnectAsync();
 
@@ -35,25 +36,55 @@ class Program
 
             if (result.Result)
             {
-                Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
-                foreach (DataColumn column in data.Columns)
+
+                /// это вариант отсоеденненой модели
                 {
-                    Console.Write($"{column.ColumnName}\t");
-                }
-                foreach (DataRow row in data.Rows)
-                {
-                    var cells = row.ItemArray;
-                    foreach (var cell in cells)
+                    Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
+                    foreach (DataColumn column in data.Columns)
                     {
-                        Console.Write($"{cell}\t");
-                        Console.Write($"{row[data.Columns[0].ColumnName]}\t");
+                        Console.Write($"{column.ColumnName}\t");
+                    }
+                    foreach (DataRow row in data.Rows)
+                    {
+                        var cells = row.ItemArray;
+                        foreach (var cell in cells)
+                        {
+                            Console.Write($"{cell}\t");
+                            Console.Write($"{row[data.Columns[0].ColumnName]}\t");
+                        }
+                        Console.WriteLine();
+
+                    }
+
+                }
+                /// вот так работает ридер
+                var reader = db.SelectAllCommandReader(tablename);
+                if (reader != null)
+                {
+                    var columnList = new List<string>();
+
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        var name = reader.GetName(i);
+                        columnList.Add(name);
+                    }
+                    for (int i = 0; i < columnList.Count; i++)
+                    {
+                        Console.Write($"{columnList[i]}\t");
                     }
                     Console.WriteLine();
-                   
-                }
-               
-            }
+                    while (reader.Read())
+                    {
+                        for (int i = 0; i < columnList.Count; i++)
+                        {
+                            var value = reader[columnList[i]];
+                            Console.Write($"{value}\t");
+                        }
 
+                        Console.WriteLine();
+                    }
+                }
+            }
         }
 
         else
