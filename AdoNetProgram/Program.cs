@@ -1,96 +1,109 @@
 ﻿using AdoNetMediumLib.Configuration;
+using AdoNetProgram;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
+using static AdoNetProgram.Manager;
 
 class Program
 {
+
     static void Main(string[] args)
     {
-        var connector = new MainConnector();
+        var manager = new Manager();
 
-        var result = connector.ConnectAsync();
-
-        var data = new DataTable();
+        manager.Connect();
 
 
-        if (result.Result)
+        Console.WriteLine("Список команд для работы консоли:");
+        Console.WriteLine(Commands.stop + ": прекращение работы");
+        Console.WriteLine(Commands.add + ": добавление данных");
+        Console.WriteLine(Commands.delete + ": удаление данных");
+        Console.WriteLine(Commands.update + ": обновление данных");
+        Console.WriteLine(Commands.show + ": просмотр данных");
+
+        string command;
+
+        do
         {
-            Console.WriteLine("Подключено успешно!");
-
-            var db = new DbExecutor(connector);
-
-            var tablename = "NetworkUser";
-
-            Console.WriteLine("Получаем данные таблицы " + tablename);
-
-            data = db.SelectAll(tablename);
-
-            Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
-
-
-            Console.WriteLine("Отключаем БД!");
-            connector.DisconnectAsync();
-
-            result = connector.ConnectAsync();
-
-            if (result.Result)
+            Console.WriteLine("Введите команду:");
+            command = Console.ReadLine();
+            switch (command)
             {
-
-                /// это вариант отсоеденненой модели
-                {
-                    Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
-                    foreach (DataColumn column in data.Columns)
+                case
+                nameof(Commands.add):
                     {
-                        Console.Write($"{column.ColumnName}\t");
-                    }
-                    foreach (DataRow row in data.Rows)
-                    {
-                        var cells = row.ItemArray;
-                        foreach (var cell in cells)
-                        {
-                            Console.Write($"{cell}\t");
-                            Console.Write($"{row[data.Columns[0].ColumnName]}\t");
-                        }
-                        Console.WriteLine();
-
+                        Add(manager);
+                        break;
                     }
 
-                }
-                /// вот так работает ридер
-                var reader = db.SelectAllCommandReader(tablename);
-                if (reader != null)
-                {
-                    var columnList = new List<string>();
+                case
+                nameof(Commands.delete):
+                    {
+                        Delete(manager);
+                        break;
+                    }
+                case
+                nameof(Commands.update):
+                    {
+                        Update(manager);
+                        break;
+                    }
+                case
+                nameof(Commands.show):
+                    {
+                        manager.ShowDataUsers();
+                        break;
+                    }
 
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        var name = reader.GetName(i);
-                        columnList.Add(name);
-                    }
-                    for (int i = 0; i < columnList.Count; i++)
-                    {
-                        Console.Write($"{columnList[i]}\t");
-                    }
-                    Console.WriteLine();
-                    while (reader.Read())
-                    {
-                        for (int i = 0; i < columnList.Count; i++)
-                        {
-                            var value = reader[columnList[i]];
-                            Console.Write($"{value}\t");
-                        }
-
-                        Console.WriteLine();
-                    }
-                }
             }
+            Console.WriteLine();
+
+        }
+        while (command != nameof(Commands.stop));
+
+
+        static void Update(Manager manager)
+        {
+            Console.WriteLine("Введите логин для обновления:");
+
+            var login = Console.ReadLine();
+
+            Console.WriteLine("Введите имя для обновления:");
+            var name = Console.ReadLine();
+
+            var count = manager.UpdateUserByLogin(login, name);
+
+            Console.WriteLine("Строк обновлено" + count);
+
+            manager.ShowDataUsers();
+        }
+        static void Add(Manager manager)
+        {
+            Console.WriteLine("Введите логин для добавления:");
+
+            var login = Console.ReadLine();
+
+            Console.WriteLine("Введите имя для добавления:");
+            var name = Console.ReadLine();
+
+            manager.AddUser(login, name);
+
+            manager.ShowDataUsers();
+        }
+        static void Delete(Manager manager)
+        {
+            Console.WriteLine("Введите логин для удаления:");
+
+            var count = manager.DeleteUserByLogin(Console.ReadLine());
+
+            Console.WriteLine("Количество удаленных строк " + count);
+
+            manager.ShowDataUsers();
         }
 
-        else
-        {
-            Console.WriteLine("Ошибка подключения!");
-        }
+        manager.Disconnect();
 
         Console.ReadKey();
 
